@@ -1,0 +1,15 @@
+{
+  "name": "metro-hold-update-for-generated-module",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "test": "node test.js",
+    "test:held": "node test.js --held"
+  },
+  "dependencies": {
+    "metro": "0.87.2"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}
