@@ -15,19 +15,6 @@ yarn test
 yarn test:held
 ```
 
-Expected, for a config that could hold the update: one update carrying `screen.js` and `generated.js`.
-
-`yarn test` (Metro 0.87.2): the update carrying `screen.js` comes first, and `generated.js` follows in a second one.
-
-```text
-update 1: screen.js
-update 2: generated.js
-FAIL: the update carrying screen.js does not carry generated.js
-```
-
-`yarn test:held`, with the internal method replaced:
-
-```text
-update 1: screen.js, generated.js
-PASS: screen.js and generated.js arrived in one update
-```
+`yarn test` exits 1 while the update carrying `screen.js` does not carry `generated.js`, 0 once one update carries
+both, and 2 when a step fails. `yarn test:held` runs the same with the internal method replaced, as the behaviour a
+supported hook would give.

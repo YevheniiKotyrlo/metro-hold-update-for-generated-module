@@ -1,5 +1,6 @@
 // Starts Metro with metro.config.js, registers the bundle for hot reload, edits screen.js, and prints every update
-// Metro sends until one carries generated.js. Exits 1 when the update carrying screen.js does not carry generated.js.
+// Metro sends until one carries generated.js. Exits 1 when the update carrying screen.js does not carry generated.js,
+// 0 when one update carries both, and 2 when a step fails.
 const fs = require('node:fs');
 const path = require('node:path');
 const Metro = require('metro');
@@ -13,14 +14,17 @@ const restore = () => {
   for (const [file, source] of originals) fs.writeFileSync(file, source);
 };
 
+const held = process.argv.includes('--held');
+const mode = held ? 'updates held' : 'no hold';
+
 const modulesOf = (update) =>
-  [...update.added, ...update.modified].map(({ sourceMappingURL }) => path.basename(new URL(sourceMappingURL).pathname).replace(/\.map$/, '.js'));
+  [...update.added, ...update.modified].map(({ sourceMappingURL }) => path.basename(new URL(sourceMappingURL).pathname).replace(/(\.js)?\.map$/, '.js'));
 
 const main = async () => {
   const config = await Metro.loadConfig({ config: path.join(__dirname, 'metro.config.js') });
   const { httpServer } = await Metro.runServer(config, { host: HOST });
   const bundleUrl = `http://${HOST}:${config.server.port}/index.bundle?platform=ios&dev=true&minify=false`;
-  console.log(`Metro ${require('metro/package.json').version}, ${process.argv.includes('--held') ? 'updates held' : 'no hold'}`);
+  console.log(`Metro ${require('metro/package.json').version}, ${mode}`);
 
   const response = await fetch(bundleUrl);
   console.log(`bundle: HTTP ${response.status}`);
@@ -60,16 +64,21 @@ const main = async () => {
     restore();
   }
   const withScreen = updates.find((modules) => modules.includes('screen.js'));
-  if (withScreen === undefined || !withScreen.includes('generated.js')) {
-    console.log('FAIL: the update carrying screen.js does not carry generated.js');
+  if (withScreen === undefined) {
+    console.log('SUMMARY: step failed: no update carried screen.js');
+    process.exit(2);
+  }
+  if (!withScreen.includes('generated.js')) {
+    console.log(`SUMMARY: defect (${mode}): the update carrying screen.js does not carry generated.js, which reached the app ${updates.length - updates.indexOf(withScreen) - 1} update(s) later`);
     process.exit(1);
   }
-  console.log('PASS: screen.js and generated.js arrived in one update');
+  console.log(`SUMMARY: fixed (${mode}): screen.js and generated.js arrived in one update`);
   process.exit(0);
 };
 
 main().catch((error) => {
   restore();
   console.error(error);
-  process.exit(1);
+  console.log(`SUMMARY: step failed: ${error.message}`);
+  process.exit(2);
 });

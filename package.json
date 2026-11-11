@@ -7,7 +7,7 @@
     "test:held": "node test.js --held"
   },
   "dependencies": {
-    "metro": "0.87.2"
+    "metro": "0.88.0"
   },
   "engines": {
     "node": ">=22"
